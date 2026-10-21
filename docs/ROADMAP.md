@@ -10,8 +10,8 @@
 
 ## 0.2 Common data model
 
-- QualifiedName
-- LocalizedText
+- QualifiedName (done)
+- LocalizedText (done)
 - DateTime and StatusCode helpers
 - DataValue and Variant codecs
 

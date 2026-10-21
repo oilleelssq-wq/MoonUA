@@ -20,6 +20,14 @@ pub(all) suberror UaError {
 pub fn UaError::message(Self) -> String
 
 // Types and methods
+pub(all) struct LocalizedText {
+  locale : String?
+  text : String?
+}
+pub fn LocalizedText::new(String?, String?) -> Self
+pub fn LocalizedText::text_only(String) -> Self
+pub fn LocalizedText::to_string(Self) -> String
+
 pub(all) struct NodeId {
   namespace_index : UInt16
   identifier : NodeIdIdentifier
@@ -36,6 +44,13 @@ pub(all) enum NodeIdIdentifier {
   Guid(Bytes)
   Opaque(Bytes)
 }
+
+pub(all) struct QualifiedName {
+  namespace_index : UInt16
+  name : String
+}
+pub fn QualifiedName::new(UInt16, String) -> Self
+pub fn QualifiedName::to_string(Self) -> String
 
 pub(all) struct UaLimits {
   max_byte_length : Int
@@ -57,7 +72,9 @@ pub fn UaReader::read_float(Self) -> Float raise UaError
 pub fn UaReader::read_int16(Self) -> Int raise UaError
 pub fn UaReader::read_int32(Self) -> Int raise UaError
 pub fn UaReader::read_int64(Self) -> Int64 raise UaError
+pub fn UaReader::read_localized_text(Self) -> LocalizedText raise UaError
 pub fn UaReader::read_node_id(Self) -> NodeId raise UaError
+pub fn UaReader::read_qualified_name(Self) -> QualifiedName raise UaError
 pub fn UaReader::read_required_bytes(Self) -> Bytes raise UaError
 pub fn UaReader::read_required_string(Self) -> String raise UaError
 pub fn UaReader::read_sbyte(Self) -> Int raise UaError
@@ -81,9 +98,11 @@ pub fn UaWriter::write_float(Self, Float) -> Unit
 pub fn UaWriter::write_int16(Self, Int) -> Unit raise UaError
 pub fn UaWriter::write_int32(Self, Int) -> Unit
 pub fn UaWriter::write_int64(Self, Int64) -> Unit
+pub fn UaWriter::write_localized_text(Self, LocalizedText) -> Unit raise UaError
 pub fn UaWriter::write_node_id(Self, NodeId) -> Unit raise UaError
 pub fn UaWriter::write_nullable_bytes(Self, Bytes?) -> Unit raise UaError
 pub fn UaWriter::write_nullable_string(Self, String?) -> Unit raise UaError
+pub fn UaWriter::write_qualified_name(Self, QualifiedName) -> Unit raise UaError
 pub fn UaWriter::write_sbyte(Self, Int) -> Unit raise UaError
 pub fn UaWriter::write_string(Self, String) -> Unit raise UaError
 pub fn UaWriter::write_u8(Self, UInt) -> Unit
