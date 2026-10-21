@@ -1,0 +1,96 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "oilleelssq-wq/moonua"
+
+import {
+  "moonbitlang/core/buffer",
+}
+
+// Values
+
+// Errors
+pub(all) suberror UaError {
+  Truncated(Int, Int)
+  InvalidLength(Int)
+  LimitExceeded(Int, Int)
+  InvalidUtf8
+  InvalidNodeIdEncoding(UInt)
+  InvalidGuidLength(Int)
+  InvalidValue(String)
+}
+pub fn UaError::message(Self) -> String
+
+// Types and methods
+pub(all) struct NodeId {
+  namespace_index : UInt16
+  identifier : NodeIdIdentifier
+}
+pub fn NodeId::bytes(UInt16, Bytes) -> Self
+pub fn NodeId::guid(UInt16, Bytes) -> Self
+pub fn NodeId::numeric(UInt16, UInt) -> Self
+pub fn NodeId::string(UInt16, String) -> Self
+pub fn NodeId::to_string(Self) -> String
+
+pub(all) enum NodeIdIdentifier {
+  Numeric(UInt)
+  String(String)
+  Guid(Bytes)
+  Opaque(Bytes)
+}
+
+pub(all) struct UaLimits {
+  max_byte_length : Int
+}
+pub fn UaLimits::default() -> Self
+
+pub(all) struct UaReader {
+  data : BytesView
+  mut offset : Int
+  limits : UaLimits
+}
+pub fn UaReader::from_bytes(Bytes) -> Self
+pub fn UaReader::new(BytesView) -> Self
+pub fn UaReader::position(Self) -> Int
+pub fn UaReader::read_bool(Self) -> Bool raise UaError
+pub fn UaReader::read_bytes(Self) -> Bytes? raise UaError
+pub fn UaReader::read_double(Self) -> Double raise UaError
+pub fn UaReader::read_float(Self) -> Float raise UaError
+pub fn UaReader::read_int16(Self) -> Int raise UaError
+pub fn UaReader::read_int32(Self) -> Int raise UaError
+pub fn UaReader::read_int64(Self) -> Int64 raise UaError
+pub fn UaReader::read_node_id(Self) -> NodeId raise UaError
+pub fn UaReader::read_required_bytes(Self) -> Bytes raise UaError
+pub fn UaReader::read_required_string(Self) -> String raise UaError
+pub fn UaReader::read_sbyte(Self) -> Int raise UaError
+pub fn UaReader::read_string(Self) -> String? raise UaError
+pub fn UaReader::read_u8(Self) -> UInt raise UaError
+pub fn UaReader::read_uint16(Self) -> UInt16 raise UaError
+pub fn UaReader::read_uint32(Self) -> UInt raise UaError
+pub fn UaReader::read_uint64(Self) -> UInt64 raise UaError
+pub fn UaReader::remaining(Self) -> Int
+pub fn UaReader::with_limits(BytesView, UaLimits) -> Self
+
+pub(all) struct UaWriter {
+  buffer : @buffer.Buffer
+}
+pub fn UaWriter::new() -> Self
+pub fn UaWriter::to_bytes(Self) -> Bytes
+pub fn UaWriter::write_bool(Self, Bool) -> Unit
+pub fn UaWriter::write_bytes(Self, Bytes) -> Unit raise UaError
+pub fn UaWriter::write_double(Self, Double) -> Unit
+pub fn UaWriter::write_float(Self, Float) -> Unit
+pub fn UaWriter::write_int16(Self, Int) -> Unit raise UaError
+pub fn UaWriter::write_int32(Self, Int) -> Unit
+pub fn UaWriter::write_int64(Self, Int64) -> Unit
+pub fn UaWriter::write_node_id(Self, NodeId) -> Unit raise UaError
+pub fn UaWriter::write_nullable_bytes(Self, Bytes?) -> Unit raise UaError
+pub fn UaWriter::write_nullable_string(Self, String?) -> Unit raise UaError
+pub fn UaWriter::write_sbyte(Self, Int) -> Unit raise UaError
+pub fn UaWriter::write_string(Self, String) -> Unit raise UaError
+pub fn UaWriter::write_u8(Self, UInt) -> Unit
+pub fn UaWriter::write_uint16(Self, UInt16) -> Unit
+pub fn UaWriter::write_uint32(Self, UInt) -> Unit
+pub fn UaWriter::write_uint64(Self, UInt64) -> Unit
+
+// Type aliases
+
+// Traits
