@@ -27,7 +27,7 @@ MoonUA 用纯 MoonBit 实现 OPC UA Binary Encoding，为工业设备、边缘�
 - QualifiedName 和 LocalizedText 的编码掩码与可空字段。
 - 长度限制、截断检测、非法编码和非法 UTF-8 诊断。
 - 后续加入 SecureChannel 和客户端会话。
-- 当前不做网络传输、证书、安全通道、多维 Variant 数组和完整服务端。
+- 当前不做网络传输、证书、安全通道和完整服务端。
 
 ## 原创性与生态定位
 

@@ -124,13 +124,64 @@ test "Variant arrays enforce homogeneous non-null elements" {
 }
 
 ///|
-test "Variant rejects dimensions limits and unsupported built-in types" {
+test "Variant multidimensional arrays encode dimensions after values" {
+  let array = VariantArray::from_dimensions(
+    [Int32Value(1), Int32Value(2), Int32Value(3), Int32Value(4)],
+    [2, 2],
+  )
+  assert_eq(
+    encode_variant(ArrayValue(array)),
+    b"\xC6\x04\x00\x00\x00\x01\x00\x00\x00\x02\x00\x00\x00\x03\x00\x00\x00\x04\x00\x00\x00\x02\x00\x00\x00\x02\x00\x00\x00\x02\x00\x00\x00",
+  )
+  let decoded = decode_variant(
+    b"\xC6\x04\x00\x00\x00\x01\x00\x00\x00\x02\x00\x00\x00\x03\x00\x00\x00\x04\x00\x00\x00\x02\x00\x00\x00\x02\x00\x00\x00\x02\x00\x00\x00",
+  )
+  match decoded {
+    ArrayValue(result) => {
+      assert_eq(result.is_multidimensional(), true)
+      assert_eq(result.length(), 4)
+      match result.dimensions {
+        Some(dims) => {
+          assert_eq(dims.length(), 2)
+          assert_eq(dims[0], 2)
+          assert_eq(dims[1], 2)
+        }
+        None => fail("expected dimensions")
+      }
+    }
+    _ => fail("expected multidimensional Variant")
+  }
+}
+
+///|
+test "Variant multidimensional arrays validate dimension products" {
+  try VariantArray::from_dimensions([Int32Value(1), Int32Value(2)], [2]) catch {
+    InvalidValue(_) => ()
+    _ => fail("unexpected one-dimension declaration error")
+  } noraise {
+    _ => fail("expected one-dimensional ArrayDimensions to fail")
+  }
+  try
+    VariantArray::from_dimensions(
+      [Int32Value(1), Int32Value(2), Int32Value(3)],
+      [2, 2],
+    )
+  catch {
+    InvalidValue(_) => ()
+    _ => fail("unexpected dimension-product error")
+  } noraise {
+    _ => fail("expected mismatched ArrayDimensions to fail")
+  }
+}
+
+///|
+test "Variant rejects malformed dimensions limits and unsupported types" {
   let dimensions = UaReader::from_bytes(b"\x46")
   try dimensions.read_variant() catch {
     UnsupportedType(value) => assert_eq(value, 0x46U)
     _ => fail("unexpected dimension-array error")
   } noraise {
-    _ => fail("expected multi-dimensional Variant rejection")
+    _ => fail("expected dimensions-without-array rejection")
   }
   let limits = { ..UaLimits::default(), max_array_length: 2, }
   let oversized = UaReader::with_limits(

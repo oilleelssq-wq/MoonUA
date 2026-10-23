@@ -1,8 +1,8 @@
 ///|
 /// A practical subset of an OPC UA Variant.
 ///
-/// One-dimensional arrays are supported. Multi-dimensional arrays and
-/// recursive built-in types are rejected explicitly.
+/// One- and multi-dimensional arrays are supported. Recursive built-in types
+/// and nested arrays are rejected explicitly.
 pub(all) enum VariantValue {
   Null
   BoolValue(Bool)
@@ -30,10 +30,11 @@ pub(all) enum VariantValue {
 }
 
 ///|
-/// A homogeneous one-dimensional Variant array.
+/// A homogeneous Variant array with optional dimensions.
 pub(all) struct VariantArray {
   element_type : UInt32
   values : Array[VariantValue]
+  dimensions : Array[Int32]?
 }
 
 ///|
@@ -59,7 +60,7 @@ pub fn VariantArray::from_values(
       raise InvalidValue("Variant array elements must have the same type")
     }
   }
-  { element_type, values, }
+  { element_type, values, dimensions: None, }
 }
 
 ///|
@@ -68,13 +69,56 @@ pub fn VariantArray::empty(element_type : UInt32) -> VariantArray raise UaError 
   if element_type == 0U || element_type > 22U {
     raise UnsupportedType(element_type)
   }
-  { element_type, values: [], }
+  { element_type, values: [], dimensions: None, }
+}
+
+///|
+/// Construct a multi-dimensional array from flattened values and dimensions.
+pub fn VariantArray::from_dimensions(
+  values : Array[VariantValue],
+  dimensions : Array[Int32],
+) -> VariantArray raise UaError {
+  let array = VariantArray::from_values(values)
+  validate_variant_dimensions(array.values.length(), dimensions)
+  { ..array, dimensions: Some(dimensions), }
 }
 
 ///|
 /// Number of elements.
 pub fn VariantArray::length(self : VariantArray) -> Int32 {
   self.values.length()
+}
+
+///|
+/// Whether this array declares multiple dimensions.
+pub fn VariantArray::is_multidimensional(self : VariantArray) -> Bool {
+  match self.dimensions {
+    Some(_) => true
+    None => false
+  }
+}
+
+///|
+fn validate_variant_dimensions(
+  value_count : Int32,
+  dimensions : Array[Int32],
+) -> Unit raise UaError {
+  if dimensions.length() < 2 {
+    raise InvalidValue("ArrayDimensions requires at least two dimensions")
+  }
+  let mut product = 1L
+  for dimension in dimensions {
+    if dimension <= 0 {
+      raise InvalidValue("ArrayDimensions entries must be greater than zero")
+    }
+    product = product * dimension.to_int64()
+    if product > value_count.to_int64() {
+      raise InvalidValue("ArrayDimensions exceed the encoded value count")
+    }
+  }
+  if product != value_count.to_int64() {
+    raise InvalidValue("ArrayDimensions do not match the encoded value count")
+  }
 }
 
 ///|
@@ -145,10 +189,23 @@ pub fn UaWriter::write_variant(
 ) -> Unit raise UaError {
   match value {
     ArrayValue(array) => {
-      self.write_u8(array.element_type | 0x80U)
+      let dimensions_flag = match array.dimensions {
+        Some(_) => 0x40U
+        None => 0U
+      }
+      self.write_u8(array.element_type | 0x80U | dimensions_flag)
       self.write_int32(array.length())
       for item in array.values {
         self.write_variant_scalar_payload(item)
+      }
+      match array.dimensions {
+        Some(dimensions) => {
+          self.write_int32(dimensions.length())
+          for dimension in dimensions {
+            self.write_int32(dimension)
+          }
+        }
+        None => ()
       }
     }
     _ => {
@@ -197,14 +254,16 @@ fn UaWriter::write_variant_scalar_payload(
 }
 
 ///|
-/// Decode a one-dimensional Variant array or a scalar Variant.
+/// Decode a scalar Variant or a one-/multi-dimensional Variant array.
 pub fn UaReader::read_variant(self : UaReader) -> VariantValue raise UaError {
   let encoding_mask = self.read_u8()
-  if (encoding_mask & 0x40U) != 0U {
+  let has_dimensions = (encoding_mask & 0x40U) != 0U
+  let is_array = (encoding_mask & 0x80U) != 0U
+  let type_id = encoding_mask & 0x3FU
+  if has_dimensions && !is_array {
     raise UnsupportedType(encoding_mask)
   }
-  let type_id = encoding_mask & 0x3FU
-  if (encoding_mask & 0x80U) == 0U {
+  if !is_array {
     return self.read_variant_scalar(type_id)
   }
   if type_id == 0U {
@@ -221,7 +280,24 @@ pub fn UaReader::read_variant(self : UaReader) -> VariantValue raise UaError {
   for _ in 0..<length {
     values.push(self.read_variant_scalar(type_id))
   }
-  ArrayValue({ element_type: type_id, values, })
+  let dimensions = if has_dimensions {
+    let dimension_count = self.read_int32()
+    if dimension_count < 2 {
+      raise InvalidValue("ArrayDimensions requires at least two dimensions")
+    }
+    if dimension_count > self.limits.max_array_length {
+      raise LimitExceeded(dimension_count, self.limits.max_array_length)
+    }
+    let dimensions : Array[Int32] = []
+    for _ in 0..<dimension_count {
+      dimensions.push(self.read_int32())
+    }
+    validate_variant_dimensions(length, dimensions)
+    Some(dimensions)
+  } else {
+    None
+  }
+  ArrayValue({ element_type: type_id, values, dimensions, })
 }
 
 ///|

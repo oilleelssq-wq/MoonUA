@@ -176,9 +176,12 @@ pub fn UaWriter::write_variant(Self, VariantValue) -> Unit raise UaError
 pub(all) struct VariantArray {
   element_type : UInt
   values : Array[VariantValue]
+  dimensions : Array[Int]?
 }
 pub fn VariantArray::empty(UInt) -> Self raise UaError
+pub fn VariantArray::from_dimensions(Array[VariantValue], Array[Int]) -> Self raise UaError
 pub fn VariantArray::from_values(Array[VariantValue]) -> Self raise UaError
+pub fn VariantArray::is_multidimensional(Self) -> Bool
 pub fn VariantArray::length(Self) -> Int
 
 pub(all) enum VariantValue {

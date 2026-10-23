@@ -18,7 +18,7 @@
 ## 0.3 Structured values
 
 - ExtensionObject
-- Variant one-dimensional arrays (done)
+- Variant one- and multi-dimensional arrays (done)
 - Bounded recursive decoding
 - Encoding roundtrip fixtures
 

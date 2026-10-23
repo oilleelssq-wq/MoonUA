@@ -11,7 +11,7 @@ MoonUA 是一个纯 MoonBit 的 OPC UA Binary Encoding 基础库，面向工业�
 - QualifiedName 的 namespace index 和名称编码
 - LocalizedText 的 locale/text 掩码组合
 - DateTime、StatusCode 和带可选字段的 DataValue
-- 标量 Variant、ExtensionObject 和一维 Variant 数组
+- 标量 Variant、ExtensionObject 和一维/多维 Variant 数组
 - 类型化错误、边界检查、已知字节向量测试和可运行示例
 
 ## 快速开始
@@ -27,7 +27,7 @@ writer.write_qualified_name(@moonua.QualifiedName::new(1, "Device"))
 let bytes = writer.to_bytes()
 ```
 
-当前范围不包含网络传输、SecureChannel、Session、多维 Variant 数组或递归内建类型。这些能力会在后续阶段逐步加入。
+当前范围不包含网络传输、SecureChannel、Session 或递归内建类型。这些能力会在后续阶段逐步加入。
 
 ## 验证
 
