@@ -22,6 +22,7 @@ pub(all) enum VariantValue {
   ByteStringValue(Bytes?)
   XmlElementValue(String?)
   NodeIdValue(NodeId)
+  ExpandedNodeIdValue(ExpandedNodeId)
   StatusCodeValue(StatusCode)
   QualifiedNameValue(QualifiedName)
   LocalizedTextValue(LocalizedText)
@@ -143,6 +144,7 @@ pub fn VariantValue::type_id(self : VariantValue) -> UInt32 {
     ByteStringValue(_) => 15
     XmlElementValue(_) => 16
     NodeIdValue(_) => 17
+    ExpandedNodeIdValue(_) => 18
     StatusCodeValue(_) => 19
     QualifiedNameValue(_) => 20
     LocalizedTextValue(_) => 21
@@ -173,6 +175,7 @@ pub fn VariantValue::type_name(self : VariantValue) -> String {
     ByteStringValue(_) => "ByteString"
     XmlElementValue(_) => "XmlElement"
     NodeIdValue(_) => "NodeId"
+    ExpandedNodeIdValue(_) => "ExpandedNodeId"
     StatusCodeValue(_) => "StatusCode"
     QualifiedNameValue(_) => "QualifiedName"
     LocalizedTextValue(_) => "LocalizedText"
@@ -244,6 +247,7 @@ fn UaWriter::write_variant_scalar_payload(
     ByteStringValue(item) => self.write_nullable_bytes(item)
     XmlElementValue(item) => self.write_nullable_string(item)
     NodeIdValue(item) => self.write_node_id(item)
+    ExpandedNodeIdValue(item) => self.write_expanded_node_id(item)
     StatusCodeValue(item) => self.write_status_code(item)
     QualifiedNameValue(item) => self.write_qualified_name(item)
     LocalizedTextValue(item) => self.write_localized_text(item)
@@ -324,6 +328,7 @@ fn UaReader::read_variant_scalar(
     15 => ByteStringValue(self.read_bytes())
     16 => XmlElementValue(self.read_string())
     17 => NodeIdValue(self.read_node_id())
+    18 => ExpandedNodeIdValue(self.read_expanded_node_id())
     19 => StatusCodeValue(self.read_status_code())
     20 => QualifiedNameValue(self.read_qualified_name())
     21 => LocalizedTextValue(self.read_localized_text())

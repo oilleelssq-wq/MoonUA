@@ -5,6 +5,7 @@
 - Little-endian scalar readers and writers
 - Nullable String and ByteString
 - Six NodeId encodings
+- ExpandedNodeId URI and server flags
 - Bounds, limits, UTF-8, and invalid-value diagnostics
 - Known-byte-vector tests
 

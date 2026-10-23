@@ -8,6 +8,7 @@ MoonUA 是一个纯 MoonBit 的 OPC UA Binary Encoding 基础库，面向工业�
 - Int32、UInt32、Int64、UInt64、Float、Double
 - OPC UA String 和 ByteString，包含 null、长度和 UTF-8 检查
 - NodeId 的 TwoByte、FourByte、Numeric、String、Guid、Opaque 编码
+- ExpandedNodeId 的 NamespaceUri 和 ServerIndex 标志
 - QualifiedName 的 namespace index 和名称编码
 - LocalizedText 的 locale/text 掩码组合
 - DateTime、StatusCode 和带可选字段的 DataValue

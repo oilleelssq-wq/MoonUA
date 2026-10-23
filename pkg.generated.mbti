@@ -36,6 +36,16 @@ pub fn DataValue::empty() -> Self
 pub fn DataValue::is_empty(Self) -> Bool
 pub fn DataValue::of(VariantValue) -> Self
 
+pub(all) struct ExpandedNodeId {
+  node_id : NodeId
+  namespace_uri : String?
+  server_index : UInt?
+}
+pub fn ExpandedNodeId::new(NodeId) -> Self
+pub fn ExpandedNodeId::to_string(Self) -> String
+pub fn ExpandedNodeId::with_namespace_uri(Self, String) -> Self
+pub fn ExpandedNodeId::with_server_index(Self, UInt) -> Self
+
 pub(all) struct ExtensionObject {
   type_id : NodeId
   body : ExtensionObjectBody
@@ -123,6 +133,7 @@ pub fn UaReader::read_bytes(Self) -> Bytes? raise UaError
 pub fn UaReader::read_data_value(Self) -> DataValue raise UaError
 pub fn UaReader::read_datetime(Self) -> UaDateTime raise UaError
 pub fn UaReader::read_double(Self) -> Double raise UaError
+pub fn UaReader::read_expanded_node_id(Self) -> ExpandedNodeId raise UaError
 pub fn UaReader::read_extension_object(Self) -> ExtensionObject raise UaError
 pub fn UaReader::read_float(Self) -> Float raise UaError
 pub fn UaReader::read_int16(Self) -> Int raise UaError
@@ -154,6 +165,7 @@ pub fn UaWriter::write_bytes(Self, Bytes) -> Unit raise UaError
 pub fn UaWriter::write_data_value(Self, DataValue) -> Unit raise UaError
 pub fn UaWriter::write_datetime(Self, UaDateTime) -> Unit
 pub fn UaWriter::write_double(Self, Double) -> Unit
+pub fn UaWriter::write_expanded_node_id(Self, ExpandedNodeId) -> Unit raise UaError
 pub fn UaWriter::write_extension_object(Self, ExtensionObject) -> Unit raise UaError
 pub fn UaWriter::write_float(Self, Float) -> Unit
 pub fn UaWriter::write_int16(Self, Int) -> Unit raise UaError
@@ -203,6 +215,7 @@ pub(all) enum VariantValue {
   ByteStringValue(Bytes?)
   XmlElementValue(String?)
   NodeIdValue(NodeId)
+  ExpandedNodeIdValue(ExpandedNodeId)
   StatusCodeValue(StatusCode)
   QualifiedNameValue(QualifiedName)
   LocalizedTextValue(LocalizedText)

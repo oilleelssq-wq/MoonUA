@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Added `DateTime`, `StatusCode`, scalar `Variant`, `DataValue`, and `ExtensionObject` codecs.
+- Added `DateTime`, `StatusCode`, `ExpandedNodeId`, scalar `Variant`, `DataValue`, and `ExtensionObject` codecs.
 - Added one-dimensional and multi-dimensional `Variant` arrays with element-type, dimension-product, and length bounds.
 
 ## 0.2.0
