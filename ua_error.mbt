@@ -8,6 +8,8 @@ pub(all) suberror UaError {
   InvalidNodeIdEncoding(UInt32)
   InvalidGuidLength(Int32)
   InvalidValue(String)
+  UnsupportedType(UInt32)
+  InvalidMask(String, UInt32)
 }
 
 ///|
@@ -36,5 +38,8 @@ pub fn UaError::message(self : UaError) -> String {
       "unsupported NodeId encoding 0x\{value.to_string(radix=16)}"
     InvalidGuidLength(length) => "Guid must contain 16 bytes, got \{length}"
     InvalidValue(reason) => "invalid value: \{reason}"
+    UnsupportedType(value) => "unsupported OPC UA built-in type id \{value}"
+    InvalidMask(kind, mask) =>
+      "\{kind} encoding mask has reserved bits set: 0x\{mask.to_string(radix=16)}"
   }
 }
