@@ -6,6 +6,7 @@ import {
 }
 
 // Values
+pub const UA_UNIX_EPOCH_TICKS : Int64 = 116_444_736_000_000_000
 
 // Errors
 pub(all) suberror UaError {
@@ -16,10 +17,39 @@ pub(all) suberror UaError {
   InvalidNodeIdEncoding(UInt)
   InvalidGuidLength(Int)
   InvalidValue(String)
+  UnsupportedType(UInt)
+  InvalidMask(String, UInt)
+  InvalidExtensionObjectEncoding(UInt)
 }
 pub fn UaError::message(Self) -> String
 
 // Types and methods
+pub(all) struct DataValue {
+  value : VariantValue?
+  status : StatusCode?
+  source_timestamp : UaDateTime?
+  server_timestamp : UaDateTime?
+  source_picoseconds : UInt16?
+  server_picoseconds : UInt16?
+}
+pub fn DataValue::empty() -> Self
+pub fn DataValue::is_empty(Self) -> Bool
+pub fn DataValue::of(VariantValue) -> Self
+
+pub(all) struct ExtensionObject {
+  type_id : NodeId
+  body : ExtensionObjectBody
+}
+pub fn ExtensionObject::binary(NodeId, Bytes) -> Self
+pub fn ExtensionObject::empty(NodeId) -> Self
+pub fn ExtensionObject::xml(NodeId, String) -> Self
+
+pub(all) enum ExtensionObjectBody {
+  NoBody
+  ByteString(Bytes)
+  XmlElement(String)
+}
+
 pub(all) struct LocalizedText {
   locale : String?
   text : String?
@@ -52,8 +82,31 @@ pub(all) struct QualifiedName {
 pub fn QualifiedName::new(UInt16, String) -> Self
 pub fn QualifiedName::to_string(Self) -> String
 
+pub(all) struct StatusCode {
+  value : UInt
+}
+pub fn StatusCode::is_good(Self) -> Bool
+pub fn StatusCode::new(UInt) -> Self
+pub fn StatusCode::raw(Self) -> UInt
+pub fn StatusCode::severity(Self) -> StatusSeverity
+pub fn StatusCode::severity_name(Self) -> String
+
+pub(all) enum StatusSeverity {
+  Good
+  Uncertain
+  Bad
+}
+
+pub(all) struct UaDateTime {
+  ticks : Int64
+}
+pub fn UaDateTime::from_ticks(Int64) -> Self
+pub fn UaDateTime::from_unix_ms(Int64) -> Self raise UaError
+pub fn UaDateTime::to_unix_ms(Self) -> Int64
+
 pub(all) struct UaLimits {
   max_byte_length : Int
+  max_array_length : Int
 }
 pub fn UaLimits::default() -> Self
 
@@ -67,7 +120,10 @@ pub fn UaReader::new(BytesView) -> Self
 pub fn UaReader::position(Self) -> Int
 pub fn UaReader::read_bool(Self) -> Bool raise UaError
 pub fn UaReader::read_bytes(Self) -> Bytes? raise UaError
+pub fn UaReader::read_data_value(Self) -> DataValue raise UaError
+pub fn UaReader::read_datetime(Self) -> UaDateTime raise UaError
 pub fn UaReader::read_double(Self) -> Double raise UaError
+pub fn UaReader::read_extension_object(Self) -> ExtensionObject raise UaError
 pub fn UaReader::read_float(Self) -> Float raise UaError
 pub fn UaReader::read_int16(Self) -> Int raise UaError
 pub fn UaReader::read_int32(Self) -> Int raise UaError
@@ -78,11 +134,13 @@ pub fn UaReader::read_qualified_name(Self) -> QualifiedName raise UaError
 pub fn UaReader::read_required_bytes(Self) -> Bytes raise UaError
 pub fn UaReader::read_required_string(Self) -> String raise UaError
 pub fn UaReader::read_sbyte(Self) -> Int raise UaError
+pub fn UaReader::read_status_code(Self) -> StatusCode raise UaError
 pub fn UaReader::read_string(Self) -> String? raise UaError
 pub fn UaReader::read_u8(Self) -> UInt raise UaError
 pub fn UaReader::read_uint16(Self) -> UInt16 raise UaError
 pub fn UaReader::read_uint32(Self) -> UInt raise UaError
 pub fn UaReader::read_uint64(Self) -> UInt64 raise UaError
+pub fn UaReader::read_variant(Self) -> VariantValue raise UaError
 pub fn UaReader::remaining(Self) -> Int
 pub fn UaReader::with_limits(BytesView, UaLimits) -> Self
 
@@ -93,7 +151,10 @@ pub fn UaWriter::new() -> Self
 pub fn UaWriter::to_bytes(Self) -> Bytes
 pub fn UaWriter::write_bool(Self, Bool) -> Unit
 pub fn UaWriter::write_bytes(Self, Bytes) -> Unit raise UaError
+pub fn UaWriter::write_data_value(Self, DataValue) -> Unit raise UaError
+pub fn UaWriter::write_datetime(Self, UaDateTime) -> Unit
 pub fn UaWriter::write_double(Self, Double) -> Unit
+pub fn UaWriter::write_extension_object(Self, ExtensionObject) -> Unit raise UaError
 pub fn UaWriter::write_float(Self, Float) -> Unit
 pub fn UaWriter::write_int16(Self, Int) -> Unit raise UaError
 pub fn UaWriter::write_int32(Self, Int) -> Unit
@@ -104,11 +165,49 @@ pub fn UaWriter::write_nullable_bytes(Self, Bytes?) -> Unit raise UaError
 pub fn UaWriter::write_nullable_string(Self, String?) -> Unit raise UaError
 pub fn UaWriter::write_qualified_name(Self, QualifiedName) -> Unit raise UaError
 pub fn UaWriter::write_sbyte(Self, Int) -> Unit raise UaError
+pub fn UaWriter::write_status_code(Self, StatusCode) -> Unit
 pub fn UaWriter::write_string(Self, String) -> Unit raise UaError
 pub fn UaWriter::write_u8(Self, UInt) -> Unit
 pub fn UaWriter::write_uint16(Self, UInt16) -> Unit
 pub fn UaWriter::write_uint32(Self, UInt) -> Unit
 pub fn UaWriter::write_uint64(Self, UInt64) -> Unit
+pub fn UaWriter::write_variant(Self, VariantValue) -> Unit raise UaError
+
+pub(all) struct VariantArray {
+  element_type : UInt
+  values : Array[VariantValue]
+}
+pub fn VariantArray::empty(UInt) -> Self raise UaError
+pub fn VariantArray::from_values(Array[VariantValue]) -> Self raise UaError
+pub fn VariantArray::length(Self) -> Int
+
+pub(all) enum VariantValue {
+  Null
+  BoolValue(Bool)
+  SByteValue(Int)
+  ByteValue(UInt)
+  Int16Value(Int)
+  UInt16Value(UInt16)
+  Int32Value(Int)
+  UInt32Value(UInt)
+  Int64Value(Int64)
+  UInt64Value(UInt64)
+  FloatValue(Float)
+  DoubleValue(Double)
+  StringValue(String?)
+  DateTimeValue(UaDateTime)
+  GuidValue(Bytes)
+  ByteStringValue(Bytes?)
+  XmlElementValue(String?)
+  NodeIdValue(NodeId)
+  StatusCodeValue(StatusCode)
+  QualifiedNameValue(QualifiedName)
+  LocalizedTextValue(LocalizedText)
+  ExtensionObjectValue(ExtensionObject)
+  ArrayValue(VariantArray)
+}
+pub fn VariantValue::type_id(Self) -> UInt
+pub fn VariantValue::type_name(Self) -> String
 
 // Type aliases
 

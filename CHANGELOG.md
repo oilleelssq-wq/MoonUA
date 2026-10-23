@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Added `DateTime`, `StatusCode`, scalar `Variant`, `DataValue`, and `ExtensionObject` codecs.
+- Added one-dimensional `Variant` arrays with element-type and length bounds.
+
 ## 0.2.0
 
 - Added QualifiedName codec.

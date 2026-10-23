@@ -71,13 +71,77 @@ test "Variant scalar values roundtrip" {
 }
 
 ///|
-test "Variant rejects arrays and unsupported built-in types" {
-  let array = UaReader::from_bytes(b"\x81\x00\x00\x00\x00")
-  try array.read_variant() catch {
-    UnsupportedType(value) => assert_eq(value, 0x81U)
-    _ => fail("unexpected array-variant error")
+test "Variant one-dimensional arrays use the array flag and length" {
+  let ints = VariantArray::from_values([Int32Value(1), Int32Value(2)])
+  assert_eq(
+    encode_variant(ArrayValue(ints)),
+    b"\x86\x02\x00\x00\x00\x01\x00\x00\x00\x02\x00\x00\x00",
+  )
+  let strings = VariantArray::from_values([
+    StringValue(Some("A")),
+    StringValue(Some("BC")),
+  ])
+  assert_eq(
+    encode_variant(ArrayValue(strings)),
+    b"\x8C\x02\x00\x00\x00\x01\x00\x00\x00A\x02\x00\x00\x00BC",
+  )
+  let decoded = decode_variant(
+    b"\x86\x02\x00\x00\x00\x01\x00\x00\x00\x02\x00\x00\x00",
+  )
+  match decoded {
+    ArrayValue(array) => {
+      assert_eq(array.element_type, 6U)
+      assert_eq(array.length(), 2)
+      match array.values[1] {
+        Int32Value(item) => assert_eq(item, 2)
+        _ => fail("expected Int32 array element")
+      }
+    }
+    _ => fail("expected Int32 array Variant")
+  }
+}
+
+///|
+test "Variant arrays support empty arrays with an explicit type" {
+  let empty = VariantArray::empty(7)
+  assert_eq(encode_variant(ArrayValue(empty)), b"\x87\x00\x00\x00\x00")
+}
+
+///|
+test "Variant arrays enforce homogeneous non-null elements" {
+  try VariantArray::from_values([Int32Value(1), DoubleValue(2.0)]) catch {
+    InvalidValue(_) => ()
+    _ => fail("unexpected heterogeneous-array error")
   } noraise {
-    _ => fail("expected array Variant rejection")
+    _ => fail("expected heterogeneous Variant array rejection")
+  }
+  try VariantArray::from_values([Null]) catch {
+    InvalidValue(_) => ()
+    _ => fail("unexpected null-array error")
+  } noraise {
+    _ => fail("expected null Variant array rejection")
+  }
+}
+
+///|
+test "Variant rejects dimensions limits and unsupported built-in types" {
+  let dimensions = UaReader::from_bytes(b"\x46")
+  try dimensions.read_variant() catch {
+    UnsupportedType(value) => assert_eq(value, 0x46U)
+    _ => fail("unexpected dimension-array error")
+  } noraise {
+    _ => fail("expected multi-dimensional Variant rejection")
+  }
+  let limits = { ..UaLimits::default(), max_array_length: 2, }
+  let oversized = UaReader::with_limits(
+    b"\x86\x03\x00\x00\x00".exact_view(),
+    limits,
+  )
+  try oversized.read_variant() catch {
+    LimitExceeded(3, 2) => ()
+    _ => fail("unexpected array limit error")
+  } noraise {
+    _ => fail("expected Variant array limit")
   }
   let data_value = UaReader::from_bytes(b"\x17")
   try data_value.read_variant() catch {

@@ -74,7 +74,7 @@ test "unicode strings and limits are enforced" {
   let encoded = writer.to_bytes()
   let reader = UaReader::from_bytes(encoded)
   assert_eq(reader.read_required_string(), "设备")
-  let limits = { max_byte_length: 2, }
+  let limits = { ..UaLimits::default(), max_byte_length: 2, }
   let oversized = UaReader::with_limits(
     b"\x03\x00\x00\x00abc".exact_view(),
     limits,

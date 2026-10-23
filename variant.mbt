@@ -1,8 +1,8 @@
 ///|
-/// A practical scalar subset of an OPC UA Variant.
+/// A practical subset of an OPC UA Variant.
 ///
-/// Array variants and recursive built-in types are rejected explicitly until
-/// their bounded codecs are implemented.
+/// One-dimensional arrays are supported. Multi-dimensional arrays and
+/// recursive built-in types are rejected explicitly.
 pub(all) enum VariantValue {
   Null
   BoolValue(Bool)
@@ -26,6 +26,55 @@ pub(all) enum VariantValue {
   QualifiedNameValue(QualifiedName)
   LocalizedTextValue(LocalizedText)
   ExtensionObjectValue(ExtensionObject)
+  ArrayValue(VariantArray)
+}
+
+///|
+/// A homogeneous one-dimensional Variant array.
+pub(all) struct VariantArray {
+  element_type : UInt32
+  values : Array[VariantValue]
+}
+
+///|
+/// Construct an array and infer its element type from the first value.
+pub fn VariantArray::from_values(
+  values : Array[VariantValue],
+) -> VariantArray raise UaError {
+  if values.is_empty() {
+    raise InvalidValue("empty VariantArray requires an explicit element type")
+  }
+  let element_type = values[0].type_id()
+  if element_type == 0U {
+    raise InvalidValue("Variant arrays cannot contain Null values")
+  }
+  for value in values {
+    match value {
+      ArrayValue(_) =>
+        raise InvalidValue("nested Variant arrays are not supported")
+      Null => raise InvalidValue("Variant arrays cannot contain Null values")
+      _ => ()
+    }
+    if value.type_id() != element_type {
+      raise InvalidValue("Variant array elements must have the same type")
+    }
+  }
+  { element_type, values, }
+}
+
+///|
+/// Construct an empty array with an explicit built-in element type.
+pub fn VariantArray::empty(element_type : UInt32) -> VariantArray raise UaError {
+  if element_type == 0U || element_type > 22U {
+    raise UnsupportedType(element_type)
+  }
+  { element_type, values: [], }
+}
+
+///|
+/// Number of elements.
+pub fn VariantArray::length(self : VariantArray) -> Int32 {
+  self.values.length()
 }
 
 ///|
@@ -54,6 +103,7 @@ pub fn VariantValue::type_id(self : VariantValue) -> UInt32 {
     QualifiedNameValue(_) => 20
     LocalizedTextValue(_) => 21
     ExtensionObjectValue(_) => 22
+    ArrayValue(value) => value.element_type
   }
 }
 
@@ -83,16 +133,36 @@ pub fn VariantValue::type_name(self : VariantValue) -> String {
     QualifiedNameValue(_) => "QualifiedName"
     LocalizedTextValue(_) => "LocalizedText"
     ExtensionObjectValue(_) => "ExtensionObject"
+    ArrayValue(value) => "Array[\{value.element_type}]"
   }
 }
 
 ///|
-/// Encode a scalar Variant with its built-in type id.
+/// Encode a Variant with its built-in type id.
 pub fn UaWriter::write_variant(
   self : UaWriter,
   value : VariantValue,
 ) -> Unit raise UaError {
-  self.write_u8(value.type_id())
+  match value {
+    ArrayValue(array) => {
+      self.write_u8(array.element_type | 0x80U)
+      self.write_int32(array.length())
+      for item in array.values {
+        self.write_variant_scalar_payload(item)
+      }
+    }
+    _ => {
+      self.write_u8(value.type_id())
+      self.write_variant_scalar_payload(value)
+    }
+  }
+}
+
+///|
+fn UaWriter::write_variant_scalar_payload(
+  self : UaWriter,
+  value : VariantValue,
+) -> Unit raise UaError {
   match value {
     Null => ()
     BoolValue(item) => self.write_bool(item)
@@ -121,16 +191,44 @@ pub fn UaWriter::write_variant(
     QualifiedNameValue(item) => self.write_qualified_name(item)
     LocalizedTextValue(item) => self.write_localized_text(item)
     ExtensionObjectValue(item) => self.write_extension_object(item)
+    ArrayValue(_) =>
+      raise InvalidValue("nested Variant arrays are not supported")
   }
 }
 
 ///|
-/// Decode a scalar Variant. Array variants are rejected explicitly.
+/// Decode a one-dimensional Variant array or a scalar Variant.
 pub fn UaReader::read_variant(self : UaReader) -> VariantValue raise UaError {
-  let type_id = self.read_u8()
-  if (type_id & 0x80U) != 0U {
-    raise UnsupportedType(type_id)
+  let encoding_mask = self.read_u8()
+  if (encoding_mask & 0x40U) != 0U {
+    raise UnsupportedType(encoding_mask)
   }
+  let type_id = encoding_mask & 0x3FU
+  if (encoding_mask & 0x80U) == 0U {
+    return self.read_variant_scalar(type_id)
+  }
+  if type_id == 0U {
+    raise UnsupportedType(encoding_mask)
+  }
+  let length = self.read_int32()
+  if length < 0 {
+    raise InvalidLength(length)
+  }
+  if length > self.limits.max_array_length {
+    raise LimitExceeded(length, self.limits.max_array_length)
+  }
+  let values : Array[VariantValue] = []
+  for _ in 0..<length {
+    values.push(self.read_variant_scalar(type_id))
+  }
+  ArrayValue({ element_type: type_id, values, })
+}
+
+///|
+fn UaReader::read_variant_scalar(
+  self : UaReader,
+  type_id : UInt32,
+) -> VariantValue raise UaError {
   match type_id {
     0 => Null
     1 => BoolValue(self.read_bool())

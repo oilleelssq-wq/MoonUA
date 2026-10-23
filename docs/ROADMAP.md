@@ -12,13 +12,13 @@
 
 - QualifiedName (done)
 - LocalizedText (done)
-- DateTime and StatusCode helpers
-- DataValue and Variant codecs
+- DateTime and StatusCode helpers (done)
+- DataValue and scalar Variant codecs (done)
 
 ## 0.3 Structured values
 
 - ExtensionObject
-- Variant containers
+- Variant one-dimensional arrays (done)
 - Bounded recursive decoding
 - Encoding roundtrip fixtures
 

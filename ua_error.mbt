@@ -17,12 +17,13 @@ pub(all) suberror UaError {
 /// Decoder resource limits.
 pub(all) struct UaLimits {
   max_byte_length : Int32
+  max_array_length : Int32
 }
 
 ///|
 /// Conservative defaults for untrusted binary input.
 pub fn UaLimits::default() -> UaLimits {
-  { max_byte_length: 16 * 1024 * 1024, }
+  { max_byte_length: 16 * 1024 * 1024, max_array_length: 1_000_000, }
 }
 
 ///|
