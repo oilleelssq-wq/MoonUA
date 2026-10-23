@@ -10,6 +10,7 @@ pub(all) suberror UaError {
   InvalidValue(String)
   UnsupportedType(UInt32)
   InvalidMask(String, UInt32)
+  InvalidExtensionObjectEncoding(UInt32)
 }
 
 ///|
@@ -41,5 +42,7 @@ pub fn UaError::message(self : UaError) -> String {
     UnsupportedType(value) => "unsupported OPC UA built-in type id \{value}"
     InvalidMask(kind, mask) =>
       "\{kind} encoding mask has reserved bits set: 0x\{mask.to_string(radix=16)}"
+    InvalidExtensionObjectEncoding(value) =>
+      "unsupported ExtensionObject encoding \{value}"
   }
 }

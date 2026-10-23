@@ -25,6 +25,7 @@ pub(all) enum VariantValue {
   StatusCodeValue(StatusCode)
   QualifiedNameValue(QualifiedName)
   LocalizedTextValue(LocalizedText)
+  ExtensionObjectValue(ExtensionObject)
 }
 
 ///|
@@ -52,6 +53,7 @@ pub fn VariantValue::type_id(self : VariantValue) -> UInt32 {
     StatusCodeValue(_) => 19
     QualifiedNameValue(_) => 20
     LocalizedTextValue(_) => 21
+    ExtensionObjectValue(_) => 22
   }
 }
 
@@ -80,6 +82,7 @@ pub fn VariantValue::type_name(self : VariantValue) -> String {
     StatusCodeValue(_) => "StatusCode"
     QualifiedNameValue(_) => "QualifiedName"
     LocalizedTextValue(_) => "LocalizedText"
+    ExtensionObjectValue(_) => "ExtensionObject"
   }
 }
 
@@ -117,6 +120,7 @@ pub fn UaWriter::write_variant(
     StatusCodeValue(item) => self.write_status_code(item)
     QualifiedNameValue(item) => self.write_qualified_name(item)
     LocalizedTextValue(item) => self.write_localized_text(item)
+    ExtensionObjectValue(item) => self.write_extension_object(item)
   }
 }
 
@@ -149,6 +153,7 @@ pub fn UaReader::read_variant(self : UaReader) -> VariantValue raise UaError {
     19 => StatusCodeValue(self.read_status_code())
     20 => QualifiedNameValue(self.read_qualified_name())
     21 => LocalizedTextValue(self.read_localized_text())
+    22 => ExtensionObjectValue(self.read_extension_object())
     other => raise UnsupportedType(other)
   }
 }
