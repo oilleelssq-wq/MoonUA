@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Clarified the OPC UA Part 6 1.05.07 binary encoding baseline, final delivery scope, optional-field structure flow, `Variant[]` nesting rules, and caller responsibilities.
+
 ## 0.3.0
 
 - Added `DateTime`, `StatusCode`, `ExpandedNodeId`, scalar `Variant`, `DataValue`, and `ExtensionObject` codecs.

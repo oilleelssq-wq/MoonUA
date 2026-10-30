@@ -1,47 +1,27 @@
-# MoonUA 项目申报书
+# MoonUA 项目申报书（2026 十月黑客松）
 
-**项目名称**：MoonUA：MoonBit 原生 OPC UA Binary Encoding 基础库
+**项目名称与方向**：MoonUA，纯 MoonBit OPC UA Binary Encoding 基础库；服务工业设备、边缘网关、协议测试与 MoonBit 可复用数据模型生态。
 
-**参赛者**：oilleelssq-wq
-
-**联系邮箱**：2321130582@qq.com
+**参赛者**：oilleelssq-wq　　**联系邮箱**：2321130582@qq.com
 
 **GitHub 仓库**：https://github.com/oilleelssq-wq/MoonUA
 
-**项目方向**：工业互联网数据交换；MoonBit 可复用协议与数据模型库。
+**标准基线**：OPC 10000-6《OPC Unified Architecture – Part 6: Mappings》1.05.07 的 OPC UA Binary 第 5.2 节；本文“完整兼容”指该节的数据编码语义，不含 XML/JSON 映射、安全握手或网络传输。
 
-## 项目简介
+**最终交付目标**：完成 Built-in Types、Arrays、Structures、Structures with optional fields、Unions、Variant、Variant[]、DataValue、ExtensionObject、DiagnosticInfo 与 Decimal 的确定性编解码，并提供结构 schema、ExtensionObject 类型注册和递归/长度预算；技术路线为 schema/类型表、掩码与字段编解码、官方向量双向验证。非法掩码、截断、越界或尺寸不一致均返回 `UaError`。
 
-MoonUA 用纯 MoonBit 实现 OPC UA Binary Encoding，为工业设备、边缘网关、测试工具和数字孪生应用提供可复用的二进制数据编解码层。当前阶段完成基础标量、字符串、字节串、NodeId、ExpandedNodeId、QualifiedName、LocalizedText、DateTime、StatusCode、Variant、DataValue 和 ExtensionObject，并覆盖 OPC UA 的六种 NodeId 编码形式。后续阶段加入 SecureChannel 和客户端会话。
+**当前 0.3.0 已交付**：标量、Nullable String/ByteString、六种 NodeId、ExpandedNodeId、QualifiedName、LocalizedText、DateTime、StatusCode、DataValue 可选字段掩码、ExtensionObject，以及标量/一维/多维 Variant；已知字节向量、边界与跨 wasm 测试共 45 项通过。
 
-## 可复现案例
+**暂未实现（仅属最终目标）**：通用 optional-field 结构 schema、Union、`Variant[]`、DiagnosticInfo、Decimal、完整 ExtensionObject 类型注册；SecureChannel、Session 和网络传输不属于本项目交付。
 
-1. 工业边缘网关读取 PLC 或传感器数据，将 OPC UA 值编码为稳定的二进制消息，并在上位机中解码验证。
-2. 设备模拟器和协议测试工具构造 NodeId、名称和本地化文本，为 OPC UA 服务端互操作测试提供不依赖 C 运行时的 MoonBit 实现。
-3. CI 对比已知 OPC UA 字节向量，检查不同后端上的编码结果一致，避免工业数据在小端序、长度和边界处理上出现静默偏差。
+**可选字段案例**：`SensorReading { sensor_id: UInt32, value: Variant?, samples: Variant[]? }`，编码掩码 `0x00000003`；先写 UInt32 掩码，再按声明顺序写必填字段和已置位的可选字段，解码端拒绝保留位。
 
-## 核心功能与边界
+**嵌套 Variant 案例**：规范禁止标量 Variant 直接包含标量 Variant，但允许 `Variant[]`；数组编码掩码使用类型号 23 加数组位（`0x97`），先写元素数，再逐个写完整 Variant。完整字节示例见 `docs/ENCODING_FLOW.md`。
 
-- Boolean、整数、浮点、字符串和 ByteString 的小端序编解码。
-- NodeId 的 TwoByte、FourByte、Numeric、String、Guid、Opaque 形式。
-- ExpandedNodeId 的可选 NamespaceUri 和 ServerIndex。
-- QualifiedName 和 LocalizedText 的编码掩码与可空字段。
-- 长度限制、截断检测、非法编码和非法 UTF-8 诊断。
-- 后续加入 SecureChannel 和客户端会话。
-- 当前不做网络传输、证书、安全通道和完整服务端。
+**调用方职责**：提供合法字段值、结构 schema 和 ExtensionObject 编码 NodeId，设置递归与长度上限，并按 `UaError` 终止解析；库负责小端序、字段顺序、掩码校验、边界检查和耗尽检测。
 
-## 原创性与生态定位
+**兼容验收**：官方编码器和 MoonUA 对同一值产生相同字节；MoonUA 对官方样例及自产字节双向解码一致；畸形输入不得猜测或静默降级。
 
-项目为原创实现，不复制或移植现有代码；依据 OPC UA Part 6 Binary Encoding 规范独立设计 MoonBit 类型和 API。MoonCakes 检索未发现 OPC UA 数据模型实现，现有协议包集中在 MQTT、NATS、Kafka、AMQP、Modbus、CoAP 和 ROS 2，MoonUA 补充的是 OPC UA 数据编码这一独立生态位。
+**工程验收**：`moon fmt --check`、`moon check --deny-warn`、`moon test --deny-warn`、wasm 测试、可运行示例、CI、Apache-2.0 许可证和 MoonCakes 发布均可复现。
 
-## 技术路线
-
-先实现无 I/O 的二进制 Reader/Writer、NodeId 和常用名称模型，再以已知字节向量验证编码；随后建立 Variant、DataValue 的可组合数据模型；最后将 codec 接入 ExtensionObject、SecureChannel 和客户端会话。每个阶段都保持独立可测的 API。
-
-## 交付与验收
-
-- 可复用的 MoonCakes 包和清晰的公开 API。
-- README、申报书、路线图、变更记录和可运行示例。
-- 已知字节向量、边界条件、畸形输入和跨后端测试。
-- GitHub Actions 覆盖 check、test、fmt 和 wasm/wasm-gc。
-- 已知限制、规范来源和第三方依赖说明。
+**生态定位**：MoonCakes 检索未发现 OPC UA 数据模型库；项目独立依据规范实现 MoonBit API，不复制现有代码，也不与 MQTT、Modbus、CoAP、ROS 2 等协议包重叠。
